@@ -158,11 +158,21 @@ app.post('/information', (req, res) => {
 // 添加学生
 app.post('/addStu', (req, res) => {
   const password = md5(md5(req.body.password))
-  const sql = 'INSERT INTO student(id, Snu, name, password, age, Sex, phone, department, major, creation_time) VALUES(0, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  const sqlArr = [req.body.Snu, req.body.name, password, req.body.age, req.body.Sex, req.body.phone, req.body.department, req.body.major, req.body.creation_time]
+  const sql = 'INSERT INTO student(id, Snu, name, password, age, Sex, phone, level, department, major, creation_time) VALUES(0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  const sqlArr = [req.body.Snu, req.body.name, password, req.body.age, req.body.Sex, req.body.phone, req.body.level, req.body.department, req.body.major, req.body.creation_time]
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
-      return console.log(err);
+      const data = err.sqlMessage.split(' ')
+      const mes = data[data.length-1]
+      if( mes == "'Snu'" ){
+        return res.send({
+          "data": {},
+          "meta": {
+            "msg": '学号已存在',
+            "status": 204
+          }
+        })
+      }
     }
     res.send({
       "data": {},
@@ -182,7 +192,6 @@ app.get('/department', (req, res) => {
       return console.log(err);
     }
     const rows = JSON.parse(JSON.stringify(vals))
-    console.log(rows[0].department);
     res.send(rows)
   })
 })
