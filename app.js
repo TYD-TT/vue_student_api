@@ -130,7 +130,7 @@ app.post('/register', (req, res) => {
 // 管理员查询学生基本信息
 app.post('/information', (req, res) => {
   let sql = 'select Snu, name,phone,department,major from student where department=? and major=? and level=?'
-  let sqlArr = [req.body.department, req.body.major,req.body.level]
+  let sqlArr = [req.body.department, req.body.major, req.body.level]
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
       console.log(1);
@@ -163,8 +163,8 @@ app.post('/addStu', (req, res) => {
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
       const data = err.sqlMessage.split(' ')
-      const mes = data[data.length-1]
-      if( mes == "'Snu'" ){
+      const mes = data[data.length - 1]
+      if (mes == "'Snu'") {
         return res.send({
           "data": {},
           "meta": {
@@ -197,9 +197,9 @@ app.get('/department', (req, res) => {
 })
 
 // 查询所有的专业
-app.get('/major',(req,res)=>{
+app.get('/major', (req, res) => {
   const sql = 'select depnum,major from major'
-  query(sql,(err,vals,fields)=>{
+  query(sql, (err, vals, fields) => {
     if (err) {
       return console.log(err);
     }
@@ -222,6 +222,77 @@ app.post('/major', (req, res) => {
     const rows = JSON.stringify(vals)
     console.log(rows);
     res.send(rows)
+  })
+})
+
+// 根据学号查询学生信息
+app.get('/editStu', (req, res) => {
+  const sql = 'select Snu, name, department, major, phone from student where Snu=?'
+  const sqlArr = [req.query.Snu]
+  query(sql, sqlArr, (err, vals, fields) => {
+    if (err) {
+      return console.log(err);
+    }
+    const rows = JSON.parse(JSON.stringify(vals))
+    res.send({
+      "data": {
+        "Snu": rows[0].Snu,
+        "name": rows[0].name,
+        "department": rows[0].department,
+        "major": rows[0].major,
+        "phone": rows[0].phone
+      },
+      "meta": {
+        "msg": '获取成功',
+        "status": '201'
+      }
+    })
+  })
+})
+
+// 根据学号修改学生信息
+app.post('/editStudent', (req, res) => {
+  const sql = 'update student set name=?,department=?,major=?,phone=? where Snu=?'
+  const sqlArr = [req.body.name, req.body.department, req.body.major, req.body.phone, req.body.Snu]
+  query(sql, sqlArr, (err, vals, fields) => {
+    if (err) {
+      return res.send({
+        "meta": {
+          "msg": "修改信息失败",
+
+          "status": "205"
+        }
+      });
+    }
+    res.send({
+      "meta": {
+        "msg": "修改成功",
+
+        "status": "201"
+      }
+    });
+  })
+})
+
+// 根据学号删除学生信息
+app.delete('/editStudent/:Snu', (req, res) => {
+  const sql = 'DELETE FROM student WHERE Snu=?'
+  const sqlArr = [req.params.Snu]
+  query(sql, sqlArr, (err, vals, fields) => {
+    if (err) {
+      return res.send({
+        "meta": {
+          "msg": "删除失败",
+          "status": '204'
+        }
+      })
+    }
+    res.send({
+      "meta": {
+        "msg": "删除成功",
+        "status": '201'
+      }
+    })
   })
 })
 app.listen(port, () => console.log(`Example app listening on port port!http://127.0.0.1:3000`))
