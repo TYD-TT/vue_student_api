@@ -50,12 +50,15 @@ app.post('/login', (req, res) => {
   var db_table
   if (req.body.radio === 0) {
     db_table = 'student'
+    var sql = 'select * FROM' + " " + db_table + " " + 'where Snu = ? AND password = ?'
   } else if (req.body.radio === 1) {
     db_table = 'teacher'
+    var sql = 'select * FROM' + " " + db_table + " " + 'where Tnu = ? AND password = ?'
   } else {
     db_table = 'admin'
+    var sql = 'select * FROM' + " " + db_table + " " + 'where name = ? AND password = ?'
   }
-  var sql = 'select * FROM' + " " + db_table + " " + 'where name = ? AND password = ?'
+
   var pass = md5(md5(req.body.password))
   var sqlArr = [req.body.username, pass]
 
@@ -235,13 +238,13 @@ app.get('/editStu', (req, res) => {
     }
     const rows = JSON.parse(JSON.stringify(vals))
     res.send({
-      "data": {
+      "data": [{
         "Snu": rows[0].Snu,
         "name": rows[0].name,
         "department": rows[0].department,
         "major": rows[0].major,
         "phone": rows[0].phone
-      },
+      }],
       "meta": {
         "msg": '获取成功',
         "status": '201'
@@ -291,6 +294,30 @@ app.delete('/editStudent/:Snu', (req, res) => {
       "meta": {
         "msg": "删除成功",
         "status": '201'
+      }
+    })
+  })
+})
+
+// 学生修改密码
+app.post('/changepwd',(req,res)=>{
+  const sql = 'update student set password=? where Snu=?'
+  const sqlArr=[md5(md5(req.body.newpass)),req.body.num]
+  query(sql,sqlArr,(err,vals,fields)=>{
+    if (err) {
+      return res.send({
+        "data":{},
+        "meta":{
+          "msg":'修改失败',
+          "status":'204'
+        }
+      })
+    }
+    res.send({
+      "data":{},
+      "meta":{
+        "msg":'修改成功',
+        "status":'201'
       }
     })
   })
