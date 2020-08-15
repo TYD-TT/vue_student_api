@@ -46,7 +46,6 @@ app.get('/login', (req, res) => {
 
 // 登录请求
 app.post('/login', (req, res) => {
-  console.log(req);
   var db_table
   if (req.body.radio === 0) {
     db_table = 'student'
@@ -216,7 +215,6 @@ app.get('/major', (req, res) => {
 app.post('/major', (req, res) => {
   const sql = 'select major from major where depnum = ? '
   const sqlArr = [req.body.depnum]
-  console.log(sqlArr);
   // console.log(req);
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
@@ -230,7 +228,7 @@ app.post('/major', (req, res) => {
 
 // 根据学号查询学生信息
 app.get('/editStu', (req, res) => {
-  const sql = 'select Snu, name, department, major, phone from student where Snu=?'
+  const sql = 'select Snu, name, department, major, phone,level from student where Snu=?'
   const sqlArr = [req.query.Snu]
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
@@ -238,13 +236,14 @@ app.get('/editStu', (req, res) => {
     }
     const rows = JSON.parse(JSON.stringify(vals))
     res.send({
-      "data": [{
+      "data": {
         "Snu": rows[0].Snu,
         "name": rows[0].name,
         "department": rows[0].department,
         "major": rows[0].major,
-        "phone": rows[0].phone
-      }],
+        "phone": rows[0].phone,
+        "level": rows[0].level
+      },
       "meta": {
         "msg": '获取成功',
         "status": '201'
@@ -300,26 +299,47 @@ app.delete('/editStudent/:Snu', (req, res) => {
 })
 
 // 学生修改密码
-app.post('/changepwd',(req,res)=>{
+app.post('/changepwd', (req, res) => {
   const sql = 'update student set password=? where Snu=?'
-  const sqlArr=[md5(md5(req.body.newpass)),req.body.num]
-  query(sql,sqlArr,(err,vals,fields)=>{
+  const sqlArr = [md5(md5(req.body.newpass)), req.body.num]
+  query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
       return res.send({
-        "data":{},
-        "meta":{
-          "msg":'修改失败',
-          "status":'204'
+        "data": {},
+        "meta": {
+          "msg": '修改失败',
+          "status": '204'
         }
       })
     }
     res.send({
-      "data":{},
-      "meta":{
-        "msg":'修改成功',
-        "status":'201'
+      "data": {},
+      "meta": {
+        "msg": '修改成功',
+        "status": '201'
       }
     })
   })
 })
+
+// 查询选课结果
+app.post('/course_result', (req, res) => {
+  let year = [];
+  year = req.body.year;
+  const stuClass = year.slice(5) - req.body.level;
+  const sql = 'select coursename,credit,state from course,select_course where course.id = select_course.course_id and select_course.Snu = ? and course.class = ? and course.semester = ?'
+  const sqlArr = [req.body.Snu, stuClass, req.body.semester]
+  query(sql,sqlArr,(err,vals,fields)=>{
+    if (err) {
+      return res.send({
+        "meta":{
+          "status":500
+        }
+      })
+    }
+    const rows = JSON.stringify(vals)
+    res.send(rows)
+  })
+})
+
 app.listen(port, () => console.log(`Example app listening on port port!http://127.0.0.1:3000`))
