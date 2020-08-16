@@ -342,4 +342,68 @@ app.post('/course_result', (req, res) => {
   })
 })
 
+// 查询可选课程
+app.post('/course_select',(req,res)=>{
+  let year = [];
+  year = req.body.year;
+  const stuClass = year.slice(5) - req.body.level;
+  const sql =  `select course.id,course.coursename,teacher.name,course.max,course.credit,course.state,course.address,course.schooltime
+  from course,teacher  
+  where course.Tnu = teacher.id and depnum = (select depnum from dep where department=?) and class=? and semester=?`
+  const sqlArr = [req.body.dep, stuClass, req.body.semester]
+  query(sql,sqlArr,(err,vals,fields)=>{
+    if (err) {
+      return res.send(err)
+    }
+    const rows = JSON.stringify(vals)
+    res.send(rows)
+  })
+})
+
+// 选课
+app.put('/course_select/:id',(req,res)=>{
+  const sql1 = "select count(*) from select_course where Snu=? and course_id=?"
+  const sql2 = "INSERT INTO select_course (id,Snu,course_id) VALUES (0,?,?)"
+  const sqlArr = [req.body.Snu,req.body.id]
+  query(sql1,sqlArr,(err,data)=>{
+    if (err) {
+      return  res.send({
+        "data":{},
+        "meta":{
+          "msg":'选择失败',
+          "status":500
+        }
+      })
+    } 
+    const count = JSON.stringify(data[0]["count(*)"]);
+    if (count != 0) {
+      return  res.send({
+        "data":{},
+        "meta":{
+          "msg":'该课程已选择',
+          "status":500
+        }
+      })
+    } else {
+      query(sql2,sqlArr,(err,vals,fields)=>{
+        if (err) {
+          return res.send({
+            "data":{},
+            "meta":{
+              "msg":'选择失败',
+              "status":500
+            }
+          })
+        }
+        res.send({
+          "data":{},
+          "meta":{
+            "msg":'选择成功',
+            "status":201
+          }
+        })
+      })
+    }
+  })
+})
 app.listen(port, () => console.log(`Example app listening on port port!http://127.0.0.1:3000`))
