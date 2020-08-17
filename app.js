@@ -149,7 +149,35 @@ app.post('/information', (req, res) => {
     row.count = rows.length
     if (rows.length == 0) {
       row.meta.msg = '查询对象不存在'
-      row.meta.status = 204
+      row.meta.status = 504
+      res.send(row)
+    } else {
+      res.send(row)
+    }
+  })
+})
+
+// 管理员查询教师基本信息
+app.post('/teacher_message', (req, res) => {
+  const sql = 'select Tnu, name, age,Sex,department,phone from teacher where department=?'
+  const sqlArr = [req.body.department]
+  query(sql, sqlArr, (err, vals, fields) => {
+    if (err) {
+      console.log(1);
+      return console.log(err);
+    }
+    const rows = JSON.parse(JSON.stringify(vals))
+    const row = {
+      "data": rows,
+      "meta": {
+        "msg": '获取列表成功',
+        "status": 201
+      }
+    }
+    row.count = rows.length
+    if (rows.length == 0) {
+      row.meta.msg = '查询对象不存在'
+      row.meta.status = 504
       res.send(row)
     } else {
       res.send(row)
@@ -172,6 +200,35 @@ app.post('/addStu', (req, res) => {
           "meta": {
             "msg": '学号已存在',
             "status": 204
+          }
+        })
+      }
+    }
+    res.send({
+      "data": {},
+      "meta": {
+        "msg": '添加成功',
+        "status": 201
+      }
+    })
+  })
+})
+
+// 添加教师
+app.post('/addTea', (req, res) => {
+  const password = md5(md5(req.body.password))
+  const sql = 'INSERT INTO teacher(id, Tnu, name, password, age, Sex, phone, department, creation_time) VALUES(0, ?, ?, ?, ?, ?, ?, ?, ?)'
+  const sqlArr = [req.body.Tnu, req.body.name, password, req.body.age, req.body.Sex, req.body.phone, req.body.department, req.body.creation_time]
+  query(sql, sqlArr, (err, vals, fields) => {
+    if (err) {
+      const data = err.sqlMessage.split(' ')
+      const mes = data[data.length - 1]
+      if (mes == "'Snu'") {
+        return res.send({
+          "data": {},
+          "meta": {
+            "msg": '教工号已存在',
+            "status": 504
           }
         })
       }
@@ -252,6 +309,30 @@ app.get('/editStu', (req, res) => {
   })
 })
 
+// 根据教工号查询教师信息
+app.get('/editTea', (req, res) => {
+  const sql = 'select Tnu, name, department, phone from teacher where Tnu=?'
+  const sqlArr = [req.query.Tnu]
+  query(sql, sqlArr, (err, vals, fields) => {
+    if (err) {
+      return console.log(err);
+    }
+    const rows = JSON.parse(JSON.stringify(vals))
+    res.send({
+      "data": {
+        "Tnu": rows[0].Tnu,
+        "name": rows[0].name,
+        "department": rows[0].department,
+        "phone": rows[0].phone,
+      },
+      "meta": {
+        "msg": '获取成功',
+        "status": '201'
+      }
+    })
+  })
+})
+
 // 根据学号修改学生信息
 app.post('/editStudent', (req, res) => {
   const sql = 'update student set name=?,department=?,major=?,phone=? where Snu=?'
@@ -276,16 +357,46 @@ app.post('/editStudent', (req, res) => {
   })
 })
 
-// 根据学号删除学生信息
-app.delete('/editStudent/:Snu', (req, res) => {
-  const sql = 'DELETE FROM student WHERE Snu=?'
-  const sqlArr = [req.params.Snu]
+// 根据学号修改学生信息
+app.post('/editTeacher', (req, res) => {
+  const sql = 'update teacher set name=?,department=?,phone=? where Tnu=?'
+  const sqlArr = [req.body.name, req.body.department, req.body.phone, req.body.Tnu]
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
       return res.send({
         "meta": {
+          "msg": "修改信息失败",
+
+          "status": "504"
+        }
+      });
+    }
+    res.send({
+      "meta": {
+        "msg": "修改成功",
+
+        "status": "201"
+      }
+    });
+  })
+})
+
+// 根据学号删除学生信息
+app.delete('/editStudent/:Snu', (req, res) => {
+  const num = req.params.Snu.length;
+  if (num == 11) {
+    var sql = 'DELETE FROM student WHERE Snu=?'
+  } else if(num == 10){
+    var sql = 'DELETE FROM teacher WHERE Tnu=?'
+  }
+  const sqlArr = [req.params.Snu]
+  query(sql, sqlArr, (err, vals, fields) => {
+    if (err) {
+      console.log(err);
+      return res.send({
+        "meta": {
           "msg": "删除失败",
-          "status": '204'
+          "status": '504'
         }
       })
     }
@@ -329,11 +440,11 @@ app.post('/course_result', (req, res) => {
   const stuClass = year.slice(5) - req.body.level;
   const sql = 'select coursename,credit,state from course,select_course where course.id = select_course.course_id and select_course.Snu = ? and course.class = ? and course.semester = ?'
   const sqlArr = [req.body.Snu, stuClass, req.body.semester]
-  query(sql,sqlArr,(err,vals,fields)=>{
+  query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
       return res.send({
-        "meta":{
-          "status":500
+        "meta": {
+          "status": 500
         }
       })
     }
@@ -343,15 +454,15 @@ app.post('/course_result', (req, res) => {
 })
 
 // 查询可选课程
-app.post('/course_select',(req,res)=>{
+app.post('/course_select', (req, res) => {
   let year = [];
   year = req.body.year;
   const stuClass = year.slice(5) - req.body.level;
-  const sql =  `select course.id,course.coursename,teacher.name,course.max,course.credit,course.state,course.address,course.schooltime
+  const sql = `select course.id,course.coursename,teacher.name,course.max,course.credit,course.state,course.address,course.schooltime
   from course,teacher  
   where course.Tnu = teacher.id and depnum = (select depnum from dep where department=?) and class=? and semester=?`
   const sqlArr = [req.body.dep, stuClass, req.body.semester]
-  query(sql,sqlArr,(err,vals,fields)=>{
+  query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
       return res.send(err)
     }
@@ -361,45 +472,45 @@ app.post('/course_select',(req,res)=>{
 })
 
 // 选课
-app.put('/course_select/:id',(req,res)=>{
+app.put('/course_select/:id', (req, res) => {
   const sql1 = "select count(*) from select_course where Snu=? and course_id=?"
   const sql2 = "INSERT INTO select_course (id,Snu,course_id) VALUES (0,?,?)"
-  const sqlArr = [req.body.Snu,req.body.id]
-  query(sql1,sqlArr,(err,data)=>{
+  const sqlArr = [req.body.Snu, req.body.id]
+  query(sql1, sqlArr, (err, data) => {
     if (err) {
-      return  res.send({
-        "data":{},
-        "meta":{
-          "msg":'选择失败',
-          "status":500
+      return res.send({
+        "data": {},
+        "meta": {
+          "msg": '选择失败',
+          "status": 500
         }
       })
-    } 
+    }
     const count = JSON.stringify(data[0]["count(*)"]);
     if (count != 0) {
-      return  res.send({
-        "data":{},
-        "meta":{
-          "msg":'该课程已选择',
-          "status":500
+      return res.send({
+        "data": {},
+        "meta": {
+          "msg": '该课程已选择',
+          "status": 500
         }
       })
     } else {
-      query(sql2,sqlArr,(err,vals,fields)=>{
+      query(sql2, sqlArr, (err, vals, fields) => {
         if (err) {
           return res.send({
-            "data":{},
-            "meta":{
-              "msg":'选择失败',
-              "status":500
+            "data": {},
+            "meta": {
+              "msg": '选择失败',
+              "status": 500
             }
           })
         }
         res.send({
-          "data":{},
-          "meta":{
-            "msg":'选择成功',
-            "status":201
+          "data": {},
+          "meta": {
+            "msg": '选择成功',
+            "status": 201
           }
         })
       })
