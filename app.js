@@ -283,7 +283,7 @@ app.post('/major', (req, res) => {
   })
 })
 
-// 根据学号查询学生信息
+// 根据学号/教工号查询基本信息
 app.get('/editStu', (req, res) => {
   const sql = 'select Snu, name, department, major, phone,level from student where Snu=?'
   const sqlArr = [req.query.Snu]
@@ -333,34 +333,16 @@ app.get('/editTea', (req, res) => {
   })
 })
 
-// 根据学号修改学生信息
-app.post('/editStudent', (req, res) => {
-  const sql = 'update student set name=?,department=?,major=?,phone=? where Snu=?'
-  const sqlArr = [req.body.name, req.body.department, req.body.major, req.body.phone, req.body.Snu]
-  query(sql, sqlArr, (err, vals, fields) => {
-    if (err) {
-      return res.send({
-        "meta": {
-          "msg": "修改信息失败",
-
-          "status": "205"
-        }
-      });
-    }
-    res.send({
-      "meta": {
-        "msg": "修改成功",
-
-        "status": "201"
-      }
-    });
-  })
-})
-
-// 根据学号修改学生信息
-app.post('/editTeacher', (req, res) => {
-  const sql = 'update teacher set name=?,department=?,phone=? where Tnu=?'
-  const sqlArr = [req.body.name, req.body.department, req.body.phone, req.body.Tnu]
+// 根据学号/教工号修改基本信息
+app.post('/editMsgById', (req, res) => {
+  const mn = JSON.stringify(req.body).slice(2,5)
+  if (mn == "Snu") {
+    var sql = 'update student set name=?,department=?,major=?,phone=? where Snu=?'
+  var sqlArr = [req.body.name, req.body.department, req.body.major, req.body.phone, req.body.Snu]
+  } else {
+    var sql = 'update teacher set name=?,department=?,phone=? where Tnu=?'
+  var sqlArr = [req.body.name, req.body.department, req.body.phone, req.body.Tnu]
+  }
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
       return res.send({
@@ -433,6 +415,29 @@ app.post('/changepwd', (req, res) => {
   })
 })
 
+// 教师修改密码
+app.post('/changeTeapwd', (req, res) => {
+  const sql = 'update teacher set password=? where Tnu=?'
+  const sqlArr = [md5(md5(req.body.newpass)), req.body.num]
+  query(sql, sqlArr, (err, vals, fields) => {
+    if (err) {
+      return res.send({
+        "data": {},
+        "meta": {
+          "msg": '修改失败',
+          "status": '204'
+        }
+      })
+    }
+    res.send({
+      "data": {},
+      "meta": {
+        "msg": '修改成功',
+        "status": '201'
+      }
+    })
+  })
+})
 // 查询选课结果
 app.post('/course_result', (req, res) => {
   let year = [];
