@@ -465,7 +465,7 @@ app.post('/course_select', (req, res) => {
   const stuClass = year.slice(5) - req.body.level;
   const sql = `select course.id,course.coursename,teacher.name,course.max,course.credit,course.state,course.address,course.schooltime
   from course,teacher  
-  where course.Tnu = teacher.id and depnum = (select depnum from dep where department=?) and class=? and semester=?`
+  where course.Tnu = teacher.Tnu and depnum = (select depnum from dep where department=?) and class=? and semester=?`
   const sqlArr = [req.body.dep, stuClass, req.body.semester]
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
@@ -522,4 +522,30 @@ app.put('/course_select/:id', (req, res) => {
     }
   })
 })
+
+// 获取需要打分的列表
+app.get('/make_gradeList/:Tnu',(req,res)=>{
+  const sql = ` 
+  select student.Snu,student.name 
+  from student 
+  Inner join select_course 
+  on student.Snu = select_course.Snu 
+  Inner join course 
+  on select_course.course_id = course.id 
+  Inner join teacher 
+  on course.Tnu = teacher.Tnu 
+  where teacher.Tnu =?
+  ORDER BY student.Snu
+  `
+  const sqlArr = [req.params.Tnu]
+  query(sql,sqlArr,(err,data)=>{
+    console.log(data);
+    const rows = JSON.parse(JSON.stringify(data))
+    console.log(rows);
+    res.send(rows)
+  })
+})
+
+// 打分
+// app.put()
 app.listen(port, () => console.log(`Example app listening on port port!http://127.0.0.1:3000`))
