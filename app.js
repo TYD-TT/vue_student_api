@@ -620,4 +620,18 @@ app.put('/make_grade', (req, res) => {
 
 })
 
+// 教师查看学生成绩
+app.post('/view_grade',(req,res)=>{
+  const snu = JSON.stringify(req.body).slice(11,13);
+  const sql = "select grade.Snu,grade.name,grade.grade,course.coursename from grade,course where course.id=grade.course_id and Tnu=? and Snu LIKE " +"'"+ snu + "%"+"'"
+  const sqlArr = [req.body.Tnu]
+  query(sql,sqlArr,(err,data)=>{
+    if (err) {
+      return console.log(err);
+    }
+    const rows = JSON.stringify(data)
+    res.send(data)
+  })
+})
+
 app.listen(port, () => console.log(`Example app listening on port port!http://127.0.0.1:3000`))
