@@ -335,13 +335,13 @@ app.get('/editTea', (req, res) => {
 
 // 根据学号/教工号修改基本信息
 app.post('/editMsgById', (req, res) => {
-  const mn = JSON.stringify(req.body).slice(2,5)
+  const mn = JSON.stringify(req.body).slice(2, 5)
   if (mn == "Snu") {
     var sql = 'update student set name=?,department=?,major=?,phone=? where Snu=?'
-  var sqlArr = [req.body.name, req.body.department, req.body.major, req.body.phone, req.body.Snu]
+    var sqlArr = [req.body.name, req.body.department, req.body.major, req.body.phone, req.body.Snu]
   } else {
     var sql = 'update teacher set name=?,department=?,phone=? where Tnu=?'
-  var sqlArr = [req.body.name, req.body.department, req.body.phone, req.body.Tnu]
+    var sqlArr = [req.body.name, req.body.department, req.body.phone, req.body.Tnu]
   }
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
@@ -368,7 +368,7 @@ app.delete('/editStudent/:Snu', (req, res) => {
   const num = req.params.Snu.length;
   if (num == 11) {
     var sql = 'DELETE FROM student WHERE Snu=?'
-  } else if(num == 10){
+  } else if (num == 10) {
     var sql = 'DELETE FROM teacher WHERE Tnu=?'
   }
   const sqlArr = [req.params.Snu]
@@ -524,7 +524,7 @@ app.put('/course_select/:id', (req, res) => {
 })
 
 // 获取需要打分的列表
-app.get('/make_gradeList/:Tnu',(req,res)=>{
+app.get('/make_gradeList/:Tnu', (req, res) => {
   const sql = ` 
   select student.Snu,student.name 
   from student 
@@ -538,14 +538,86 @@ app.get('/make_gradeList/:Tnu',(req,res)=>{
   ORDER BY student.Snu
   `
   const sqlArr = [req.params.Tnu]
-  query(sql,sqlArr,(err,data)=>{
-    console.log(data);
+  query(sql, sqlArr, (err, data) => {
     const rows = JSON.parse(JSON.stringify(data))
-    console.log(rows);
     res.send(rows)
   })
 })
 
-// 打分
-// app.put()
+// 打分/更成绩
+app.put('/make_grade', (req, res) => {
+  // 查看成绩是否已经存在
+  const sql1 = `
+  select count(*) 
+  from grade 
+  where Snu=? and name=? and course_id 
+  IN (SELECT id from course where Tnu = ?)
+  `
+  // 没有存入成绩是存入成绩
+  const sql2 = `
+  INSERT INTO grade (id,Snu,name,course_id,grade) 
+  VALUES (0,?,?,(SELECT id from course where Tnu = ?),?)
+  `
+  // 更改成绩
+  const sql3 = `
+  update grade set grade=?
+  where Snu=? and name=? and course_id 
+  IN (SELECT id from course where Tnu = ?)
+  `
+  const sqlArr1 = [req.body.Snu, req.body.name, req.body.Tnu, req.body.grade]
+  const sqlArr3 = [req.body.grade, req.body.Snu, req.body.name, req.body.Tnu]
+  query(sql1, sqlArr1, (error, data) => {
+    if (error) {
+      return res.send({
+        "data": {},
+        "meta": {
+          "msg": '添加错误',
+          "status": 500
+        }
+      })
+    }
+    const count = JSON.stringify(data[0]["count(*)"]);
+    if (count != 0) {
+      query(sql3, sqlArr3, (error3, data2) => {
+        if (error3) {
+          return res.send({
+            "data": {},
+            "meta": {
+              "msg": '添加错误',
+              "status": 500
+            }
+          })
+        }
+        res.send({
+          "data": {},
+          "meta": {
+            "msg": '添加成功',
+            "status": 201
+          }
+        })
+      })
+    } else {
+      query(sql2, sqlArr, (err, vals) => {
+        if (err) {
+          return res.send({
+            "data": {},
+            "meta": {
+              "msg": '添加错误',
+              "status": 500
+            }
+          })
+        }
+        res.send({
+          "data": {},
+          "meta": {
+            "msg": '添加成功',
+            "status": 201
+          }
+        })
+      })
+    }
+  })
+
+})
+
 app.listen(port, () => console.log(`Example app listening on port port!http://127.0.0.1:3000`))
