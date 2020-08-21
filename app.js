@@ -47,17 +47,16 @@ app.get('/login', (req, res) => {
 // 登录请求
 app.post('/login', (req, res) => {
   var db_table
-  if (req.body.radio === 0) {
+  if (req.body.radio == 0) {
     db_table = 'student'
     var sql = 'select * FROM' + " " + db_table + " " + 'where Snu = ? AND password = ?'
-  } else if (req.body.radio === 1) {
+  } else if (req.body.radio == 1) {
     db_table = 'teacher'
     var sql = 'select * FROM' + " " + db_table + " " + 'where Tnu = ? AND password = ?'
   } else {
     db_table = 'admin'
     var sql = 'select * FROM' + " " + db_table + " " + 'where name = ? AND password = ?'
   }
-
   var pass = md5(md5(req.body.password))
   var sqlArr = [req.body.username, pass]
 
@@ -65,9 +64,17 @@ app.post('/login', (req, res) => {
     let rows = JSON.stringify(vals)
     if (err) {
       console.log(err);
-      return res.status(500).send('服务器错误')
-    }
-    if (rows == "") {
+      return res.send({
+        "data": {
+          "username": req.body.username,
+          "password": pass
+        },
+        "meta": {
+          "msg": "用户不存在",
+          "status": 500
+        }
+      })
+    }else if (rows == "[]") {
       return res.send({
         "data": {
           "username": req.body.username,
@@ -75,20 +82,21 @@ app.post('/login', (req, res) => {
         },
         "meta": {
           "msg": "账号或密码错误",
-          "status": 204
+          "status": 500
+        }
+      })
+    } else {
+      res.send({
+        "data": {
+          "username": req.body.username,
+          "password": pass
+        },
+        "meta": {
+          "msg": "登录成功",
+          "status": 201
         }
       })
     }
-    res.send({
-      "data": {
-        "username": req.body.username,
-        "password": pass
-      },
-      "meta": {
-        "msg": "登录成功",
-        "status": 201
-      }
-    })
   })
 })
 
@@ -135,7 +143,6 @@ app.post('/information', (req, res) => {
   let sqlArr = [req.body.department, req.body.major, req.body.level]
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
-      console.log(1);
       return console.log(err);
     }
     const rows = JSON.parse(JSON.stringify(vals))
@@ -163,7 +170,6 @@ app.post('/teacher_message', (req, res) => {
   const sqlArr = [req.body.department]
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
-      console.log(1);
       return console.log(err);
     }
     const rows = JSON.parse(JSON.stringify(vals))
@@ -272,13 +278,11 @@ app.get('/major', (req, res) => {
 app.post('/major', (req, res) => {
   const sql = 'select major from major where depnum = ? '
   const sqlArr = [req.body.depnum]
-  // console.log(req);
   query(sql, sqlArr, (err, vals, fields) => {
     if (err) {
       return console.log(err);
     }
     const rows = JSON.stringify(vals)
-    console.log(rows);
     res.send(rows)
   })
 })
@@ -597,7 +601,7 @@ app.put('/make_grade', (req, res) => {
         })
       })
     } else {
-      query(sql2, sqlArr, (err, vals) => {
+      query(sql2, sqlArr1, (err, vals) => {
         if (err) {
           return res.send({
             "data": {},
@@ -631,6 +635,28 @@ app.post('/view_grade',(req,res)=>{
     }
     const rows = JSON.stringify(data)
     res.send(data)
+  })
+})
+
+// 学生查看成绩
+app.post('/S_viewGrade',(req,res)=>{
+  let year = [];
+  year = req.body.year;
+  const stuClass = year.slice(5) - req.body.level;
+  const sql = `
+  select course.coursename,teacher.name,grade.grade,course.credit
+  from course,grade,teacher
+  where grade.course_id = course.id
+  and course.Tnu = teacher.Tnu
+  and course.class=? and course.semester=? and grade.Snu=?
+  `
+  const sqlArr = [req.body.semester,stuClass,req.body.Snu]
+  query(sql,sqlArr,(err,vals)=>{
+    if (err) {
+      return console.log(err);
+    }
+    const rows = JSON.stringify(vals)
+    res.send(rows)
   })
 })
 
